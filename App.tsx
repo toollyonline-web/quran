@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import InstallPwaPopup from './components/InstallPwaPopup';
 import Home from './pages/Home';
 import SurahList from './pages/SurahList';
 import JuzList from './pages/JuzList';
@@ -45,6 +46,7 @@ const App: React.FC = () => {
           </Routes>
         </main>
         <Footer />
+        <InstallPwaPopup />
       </div>
     </Router>
   );

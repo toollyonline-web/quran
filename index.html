@@ -5,11 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#059669">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Quran Kareem">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2904/2904832.png">
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="manifest.json">
     <title>Al-Quran Kareem</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,13 +43,24 @@
 </head>
 <body class="bg-stone-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <script type="module" src="index.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(err => {
-            console.log('SW registration failed: ', err);
-          });
+          const hostname = window.location.hostname;
+          // Check for preview environments to avoid origin errors
+          const isPreview = hostname.includes('usercontent.goog') || 
+                            hostname.includes('ai.studio') || 
+                            hostname.includes('localhost') === false && hostname.includes('.') === false;
+
+          if (isPreview) {
+            console.log('Skipping SW registration on preview domain.');
+            return;
+          }
+
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('Service Worker Registered:', reg.scope))
+            .catch(err => console.warn('Service Worker Registration failed:', err.message));
         });
       }
     </script>
