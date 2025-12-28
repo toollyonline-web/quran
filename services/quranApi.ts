@@ -25,7 +25,8 @@ export const fetchSurahVerses = async (
   surahId: number, 
   translations: string = '131,158'
 ): Promise<Verse[]> => {
-  const response = await fetch(`${BASE_URL}/verses/by_chapter/${surahId}?translations=${translations}&words=true&per_page=286`);
+  // Explicitly requesting text_uthmani and page_number fields
+  const response = await fetch(`${BASE_URL}/verses/by_chapter/${surahId}?translations=${translations}&words=true&fields=text_uthmani,page_number&per_page=286`);
   const data = await response.json();
   return data.verses;
 };
@@ -34,7 +35,8 @@ export const fetchJuzVerses = async (
   juzId: number,
   translations: string = '131,158'
 ): Promise<Verse[]> => {
-  const response = await fetch(`${BASE_URL}/verses/by_juz/${juzId}?translations=${translations}&words=true&per_page=500`);
+  // Explicitly requesting text_uthmani and page_number fields
+  const response = await fetch(`${BASE_URL}/verses/by_juz/${juzId}?translations=${translations}&words=true&fields=text_uthmani,page_number&per_page=500`);
   const data = await response.json();
   return data.verses;
 };

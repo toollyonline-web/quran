@@ -81,24 +81,26 @@ const AyahItem: React.FC<AyahItemProps> = ({ verse, settings, onBookmark, isBook
         </div>
       </div>
 
-      {settings.showWordByWord && verse.words ? (
-        <div dir="rtl" className="flex flex-wrap items-start justify-start gap-4 mb-8">
-          {verse.words.map((word) => (
-            <div key={word.id} className="flex flex-col items-center">
-              <span className="font-arabic text-3xl text-slate-900 dark:text-white mb-1">
-                {word.text_uthmani}
-              </span>
-              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                {word.translation.text}
-              </span>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div dir="rtl" className="font-arabic mb-8 text-right text-3xl leading-relaxed text-slate-900 dark:text-white" style={{ fontSize: `${settings.fontSize * 1.5}rem` }}>
-          {verse.text_uthmani}
-        </div>
-      )}
+      <div className="mb-8">
+        {settings.showWordByWord && verse.words && verse.words.length > 0 ? (
+          <div dir="rtl" className="flex flex-wrap items-start justify-start gap-4">
+            {verse.words.map((word) => (
+              <div key={word.id} className="flex flex-col items-center">
+                <span className="font-arabic text-3xl text-slate-900 dark:text-white mb-1">
+                  {word.text_uthmani}
+                </span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                  {word.translation.text}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div dir="rtl" className="font-arabic text-right text-3xl leading-relaxed text-slate-900 dark:text-white" style={{ fontSize: `${settings.fontSize * 1.5}rem` }}>
+            {verse.text_uthmani || "Loading Arabic Text..."}
+          </div>
+        )}
+      </div>
 
       {settings.showEnglish && englishTrans && (
         <div className="mb-4 text-slate-600 dark:text-slate-300" dangerouslySetInnerHTML={{ __html: englishTrans }} style={{ fontSize: `${settings.fontSize}rem` }} />
