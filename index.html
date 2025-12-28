@@ -1,17 +1,44 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- SEO & Branding -->
+    <title>Al-Quran Kareem: Read, Listen & Study the Holy Quran Online with Translations</title>
+    <meta name="description" content="Experience the Holy Quran with a clean interface. Features 114 Surahs, 30 Juz, multi-lingual translations, and audio recitations by Mishary Rashid Alafasy.">
+    <meta name="keywords" content="Quran, Al-Quran, Quran Online, Islamic, Surah, Juz, Quran Audio, Mishary Rashid Alafasy, Quran Translation">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="https://cdn-icons-png.flaticon.com/512/2904/2904832.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://cdn-icons-png.flaticon.com/512/2904/2904832.png">
+    <link rel="shortcut icon" href="https://cdn-icons-png.flaticon.com/512/2904/2904832.png">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://toolly.online/">
+    <meta property="og:title" content="Al-Quran Kareem: Read, Listen & Study the Holy Quran Online">
+    <meta property="og:description" content="Experience the Holy Quran with a clean interface. Features 114 Surahs, 30 Juz, multi-lingual translations, and audio recitations.">
+    <meta property="og:image" content="https://cdn-icons-png.flaticon.com/512/2904/2904832.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://toolly.online/">
+    <meta property="twitter:title" content="Al-Quran Kareem: Read, Listen & Study the Holy Quran Online">
+    <meta property="twitter:description" content="Experience the Holy Quran with a clean interface. Features 114 Surahs, 30 Juz, multi-lingual translations, and audio recitations.">
+    <meta property="twitter:image" content="https://cdn-icons-png.flaticon.com/512/2904/2904832.png">
+
     <meta name="theme-color" content="#059669">
     <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- iOS Specific Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Quran Kareem">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2904/2904832.png">
+    
     <link rel="manifest" href="manifest.json">
-    <title>Al-Quran Kareem</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,13 +47,18 @@
         @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap');
         .font-arabic { font-family: 'Amiri', 'Scheherazade New', serif; }
         .font-urdu { font-family: 'Noto Nastaliq Urdu', serif; line-height: 2.5; }
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #059669; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #047857; }
+
+        /* PWA Splash padding for standalone */
+        @media all and (display-mode: standalone) {
+          body { padding-top: env(safe-area-inset-top); }
+        }
     </style>
 <script type="importmap">
 {
@@ -47,20 +79,9 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          const hostname = window.location.hostname;
-          // Check for preview environments to avoid origin errors
-          const isPreview = hostname.includes('usercontent.goog') || 
-                            hostname.includes('ai.studio') || 
-                            hostname.includes('localhost') === false && hostname.includes('.') === false;
-
-          if (isPreview) {
-            console.log('Skipping SW registration on preview domain.');
-            return;
-          }
-
           navigator.serviceWorker.register('./sw.js')
-            .then(reg => console.log('Service Worker Registered:', reg.scope))
-            .catch(err => console.warn('Service Worker Registration failed:', err.message));
+            .then(reg => console.log('Service Worker Registered'))
+            .catch(err => console.warn('Service Worker Failed:', err.message));
         });
       }
     </script>

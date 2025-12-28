@@ -1,19 +1,25 @@
 
-const CACHE_NAME = 'quran-kareem-cache-v3';
+const CACHE_NAME = 'quran-kareem-v4';
 const STATIC_ASSETS = [
   './',
   './index.html',
   './index.tsx',
   './manifest.json',
   'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&family=Scheherazade+New:wght@400;700&display=swap'
+  'https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&family=Scheherazade+New:wght@400;700&display=swap',
+  'https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap'
+];
+
+// Quran API and Prayer Times API should be cached to allow offline reading
+const API_URLS = [
+  'api.quran.com/api/v4',
+  'api.aladhan.com/v1'
 ];
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Pre-caching offline assets');
       return cache.addAll(STATIC_ASSETS);
     })
   );
@@ -33,20 +39,27 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Always allow non-GET requests to pass through to the network
   if (event.request.method !== 'GET') return;
 
-  // Handle navigation requests (SPA Support)
-  if (event.request.mode === 'navigate') {
+  const url = event.request.url;
+
+  // Strategy for API Calls: Network First, then Cache
+  if (API_URLS.some(api => url.includes(api))) {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match('./index.html') || caches.match('./');
-      })
+      fetch(event.request)
+        .then((response) => {
+          const resClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, resClone);
+          });
+          return response;
+        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }
 
-  // Stale-while-revalidate for everything else
+  // Strategy for Static Assets & Navigation: Stale-While-Revalidate
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
@@ -57,9 +70,7 @@ self.addEventListener('fetch', (event) => {
           });
         }
         return networkResponse;
-      }).catch(() => {
-        return cachedResponse;
-      });
+      }).catch(() => cachedResponse);
 
       return cachedResponse || fetchPromise;
     })

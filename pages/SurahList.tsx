@@ -71,8 +71,8 @@ const SurahList: React.FC = () => {
     <div className="py-12">
       <div className="mb-10 flex flex-col items-center justify-between gap-6 md:flex-row">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-800 dark:text-white">The Holy Quran</h1>
-          <p className="text-slate-500 dark:text-slate-400">Search by name, number, or keyword (e.g. "mercy")</p>
+          <h1 className="text-4xl font-extrabold text-slate-800 dark:text-white">Holy Quran Surah Index</h1>
+          <p className="text-slate-500 dark:text-slate-400">Read and study all 114 chapters of the Holy Quran</p>
         </div>
         <div className="relative w-full max-w-md">
            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
@@ -86,7 +86,7 @@ const SurahList: React.FC = () => {
            </span>
            <input 
              type="text" 
-             placeholder="Try 'Surah Maryam' or 'Gratitude'..."
+             placeholder="Search by name, number, or keyword..."
              value={search}
              onChange={(e) => setSearch(e.target.value)}
              className="w-full rounded-full border border-slate-200 bg-white py-3 pl-12 pr-4 shadow-sm focus:border-emerald-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"

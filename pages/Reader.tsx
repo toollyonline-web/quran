@@ -4,6 +4,7 @@ import { useParams, useLocation } from 'react-router-dom';
 import { Verse, Surah, Settings, TafsirResource, ChapterInfo } from '../types';
 import { fetchSurahVerses, fetchJuzVerses, fetchSurahDetails, fetchAudioUrl, fetchTafsirs, fetchTafsirResources, fetchChapterInfo } from '../services/quranApi';
 import AyahItem from '../components/AyahItem';
+import ShareButtons from '../components/ShareButtons';
 
 const Reader: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -14,6 +15,7 @@ const Reader: React.FC = () => {
   const [surah, setSurah] = useState<Surah | null>(null);
   const [chapterInfo, setChapterInfo] = useState<ChapterInfo | null>(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [tafsirs, setTafsirs] = useState<Record<string, string>>({});
   const [tafsirResources, setTafsirResources] = useState<TafsirResource[]>([]);
   const [loading, setLoading] = useState(true);
@@ -235,8 +237,8 @@ const Reader: React.FC = () => {
           {isJuz ? `Juz ${id}` : surah?.name_simple}
         </h1>
         
-        {!isJuz && (
-          <div className="mt-8 flex items-center justify-center gap-4">
+        <div className="mt-8 flex items-center justify-center flex-wrap gap-4">
+          {!isJuz && (
             <button
               onClick={toggleAudio}
               disabled={isAudioLoading}
@@ -264,8 +266,17 @@ const Reader: React.FC = () => {
                 </>
               )}
             </button>
-          </div>
-        )}
+          )}
+          <button
+            onClick={() => setShowShareModal(true)}
+            className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-2 font-bold text-slate-700 transition-all hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+            Share {isJuz ? 'Sipara' : 'Surah'}
+          </button>
+        </div>
       </div>
 
       <div className="sticky top-[72px] z-40 mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-50 bg-white/90 p-3 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/90">
@@ -338,6 +349,35 @@ const Reader: React.FC = () => {
           />
         ))}
       </div>
+
+      {showShareModal && (
+        <div 
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          onClick={() => setShowShareModal(false)}
+        >
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+          <div 
+            className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white p-8 shadow-2xl dark:bg-slate-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Share {isJuz ? `Juz ${id}` : surah?.name_simple}</h2>
+            <p className="mt-2 text-slate-500 dark:text-slate-400">Invite others to read and reflect on these verses.</p>
+            <div className="mt-8">
+               <ShareButtons 
+                  url={window.location.href} 
+                  title={isJuz ? `Read Juz ${id}` : `Read Surah ${surah?.name_simple}`}
+                  text={isJuz ? `I'm reading Juz ${id} of the Holy Quran on Al-Quran Kareem.` : `I'm reading Surah ${surah?.name_simple} on Al-Quran Kareem.`}
+               />
+            </div>
+            <button 
+              onClick={() => setShowShareModal(false)}
+              className="mt-8 w-full rounded-2xl border border-slate-200 py-3 font-bold text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {showInfoModal && chapterInfo && (
         <div 

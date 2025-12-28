@@ -1,9 +1,9 @@
 
 {
   "id": "quran-kareem-toolly-online",
-  "short_name": "Quran",
-  "name": "Al-Quran Kareem",
-  "description": "Read and listen to the Holy Quran with translations and tafsir.",
+  "short_name": "Quran Kareem",
+  "name": "Al-Quran Kareem: Read & Listen",
+  "description": "A complete digital gateway to the Holy Quran with translations, tafsir, and audio recitations.",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/2904/2904832.png",
@@ -22,12 +22,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
-    },
-    {
-      "src": "https://cdn-icons-png.flaticon.com/512/2904/2904832.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
     }
   ],
   "start_url": "./",
@@ -36,5 +30,21 @@
   "display": "standalone",
   "orientation": "portrait",
   "scope": "./",
-  "categories": ["education", "books", "reference"]
+  "categories": ["education", "books", "reference", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "Surah Index",
+      "short_name": "Surahs",
+      "description": "View all 114 Surahs",
+      "url": "#/surahs",
+      "icons": [{ "src": "https://cdn-icons-png.flaticon.com/512/2904/2904832.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "99 Names",
+      "short_name": "Names",
+      "description": "Names of Allah",
+      "url": "#/99-names",
+      "icons": [{ "src": "https://cdn-icons-png.flaticon.com/512/2904/2904832.png", "sizes": "192x192" }]
+    }
+  ]
 }

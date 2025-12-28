@@ -1,6 +1,6 @@
 {
-  "name": "Al-Quran Kareem",
-  "description": "A modern, responsive Quran web application featuring 114 Surahs, 30 Juz, multiple translations, and audio recitation by Mishary Rashid Alafasy.",
+  "name": "Al-Quran Kareem: Read & Listen Online with Multi-lingual Translations",
+  "description": "Experience the Holy Quran with a clean interface. Features 114 Surahs, 30 Juz, multi-lingual translations, and audio recitations by Mishary Rashid Alafasy.",
   "requestFramePermissions": [
     "geolocation"
   ]

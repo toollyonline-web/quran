@@ -24,8 +24,8 @@ const JuzList: React.FC = () => {
   return (
     <div className="py-12">
       <div className="mb-10">
-        <h1 className="text-3xl font-extrabold text-slate-800 dark:text-white">All Siparas (Juz)</h1>
-        <p className="text-slate-500 dark:text-slate-400">The 30 parts of the Holy Quran</p>
+        <h1 className="text-4xl font-extrabold text-slate-800 dark:text-white">All Siparas (Juz)</h1>
+        <p className="text-slate-500 dark:text-slate-400">Navigate the Holy Quran through its 30 traditional parts</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6">
