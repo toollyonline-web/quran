@@ -45,6 +45,13 @@ export interface Tafsir {
   verse_key: string;
 }
 
+export interface TafsirResource {
+  id: number;
+  name: string;
+  author_name: string;
+  language_name: string;
+}
+
 export interface AudioFile {
   id: number;
   chapter_id: number;
@@ -62,6 +69,7 @@ export interface Settings {
   showEnglish: boolean;
   showUrdu: boolean;
   showTafsir: boolean;
+  selectedTafsirId: number;
   isDarkMode: boolean;
   fontSize: number;
 }

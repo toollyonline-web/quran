@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
-import { Verse, Surah, Settings } from '../types';
-import { fetchSurahVerses, fetchJuzVerses, fetchSurahDetails, getAudioUrl, fetchTafsirs } from '../services/quranApi';
+import { Verse, Surah, Settings, TafsirResource } from '../types';
+import { fetchSurahVerses, fetchJuzVerses, fetchSurahDetails, getAudioUrl, fetchTafsirs, fetchTafsirResources } from '../services/quranApi';
 import AyahItem from '../components/AyahItem';
 
 const Reader: React.FC = () => {
@@ -13,12 +13,14 @@ const Reader: React.FC = () => {
   const [verses, setVerses] = useState<Verse[]>([]);
   const [surah, setSurah] = useState<Surah | null>(null);
   const [tafsirs, setTafsirs] = useState<Record<string, string>>({});
+  const [tafsirResources, setTafsirResources] = useState<TafsirResource[]>([]);
   const [loading, setLoading] = useState(true);
   const [tafsirLoading, setTafsirLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playPromiseRef = useRef<Promise<void> | null>(null);
 
   const [settings, setSettings] = useState<Settings>(() => {
     const saved = localStorage.getItem('quran_settings');
@@ -26,6 +28,7 @@ const Reader: React.FC = () => {
       showEnglish: true,
       showUrdu: true,
       showTafsir: false,
+      selectedTafsirId: 169, // Default: Ibn Kathir
       isDarkMode: false,
       fontSize: 1.125
     };
@@ -33,23 +36,40 @@ const Reader: React.FC = () => {
 
   useEffect(() => {
     localStorage.setItem('quran_settings', JSON.stringify(settings));
-    // If tafsir is enabled but not loaded, load it
-    if (settings.showTafsir && Object.keys(tafsirs).length === 0 && !loading) {
-      loadTafsirContent();
-    }
-  }, [settings, loading]);
+  }, [settings]);
 
   useEffect(() => {
     const saved = localStorage.getItem('quran_bookmarks');
     if (saved) setBookmarks(JSON.parse(saved));
   }, []);
 
-  const loadTafsirContent = async () => {
+  // Audio Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+        audioRef.current.load();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  const loadTafsirResources = async () => {
+    try {
+      const resources = await fetchTafsirResources('en');
+      setTafsirResources(resources);
+    } catch (e) {
+      console.error("Failed to load tafsir resources", e);
+    }
+  };
+
+  const loadTafsirContent = async (tafsirId: number = settings.selectedTafsirId) => {
     if (tafsirLoading) return;
     setTafsirLoading(true);
     try {
       const idNum = parseInt(id || '1');
-      const data = await fetchTafsirs(idNum, isJuz);
+      const data = await fetchTafsirs(idNum, isJuz, tafsirId);
       setTafsirs(data);
     } catch (e) {
       console.error("Failed to load tafsir", e);
@@ -58,9 +78,36 @@ const Reader: React.FC = () => {
     }
   };
 
+  const handleTafsirToggle = () => {
+    const nextShowTafsir = !settings.showTafsir;
+    setSettings(prev => ({ ...prev, showTafsir: nextShowTafsir }));
+    
+    if (nextShowTafsir && Object.keys(tafsirs).length === 0) {
+      loadTafsirContent();
+    }
+  };
+
+  const handleTafsirResourceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newId = parseInt(e.target.value);
+    setSettings(prev => ({ ...prev, selectedTafsirId: newId }));
+    if (settings.showTafsir) {
+      loadTafsirContent(newId);
+    }
+  };
+
   useEffect(() => {
     setLoading(true);
     setTafsirs({}); // Reset tafsirs on page change
+    
+    // Reset audio when switching surahs
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current.load();
+      audioRef.current = null;
+      setIsPlaying(false);
+    }
+
     const idNum = parseInt(id || '1');
     
     const loadContent = async () => {
@@ -76,12 +123,19 @@ const Reader: React.FC = () => {
           ]);
           setVerses(vData);
           setSurah(sData);
-          // Save last read
           localStorage.setItem('quran_last_read', JSON.stringify({
             type: 'surah',
             id: idNum,
             name: sData.name_simple
           }));
+        }
+        
+        if (tafsirResources.length === 0) {
+            await loadTafsirResources();
+        }
+
+        if (settings.showTafsir) {
+            await loadTafsirContent();
         }
       } catch (error) {
         console.error("Failed to fetch content", error);
@@ -102,23 +156,56 @@ const Reader: React.FC = () => {
     });
   };
 
-  const toggleAudio = () => {
+  const toggleAudio = async () => {
     if (!audioRef.current) {
         if (!isJuz && surah) {
-            audioRef.current = new Audio(getAudioUrl(surah.id));
-            audioRef.current.onended = () => setIsPlaying(false);
+            const url = getAudioUrl(surah.id);
+            const audio = new Audio();
+            audio.preload = "auto";
+            audio.src = url;
+            audio.onended = () => setIsPlaying(false);
+            // Handle audio error safely by referencing the audio element directly
+            audio.onerror = (e) => {
+              const audioErr = audio.error;
+              console.error("Audio playback error:", audioErr?.message || "Source not supported or unreachable.", e);
+              setIsPlaying(false);
+              alert("Sorry, this audio recitation is currently unavailable from this server.");
+            };
+            audioRef.current = audio;
         }
     }
     
-    if (audioRef.current) {
+    const audio = audioRef.current;
+    if (audio) {
         if (isPlaying) {
-            audioRef.current.pause();
+            if (playPromiseRef.current !== null) {
+                try {
+                    await playPromiseRef.current;
+                } catch (e) { /* ignore interrupted play errors */ }
+            }
+            audio.pause();
+            setIsPlaying(false);
         } else {
-            audioRef.current.play();
+            try {
+                // Ensure audio is ready or retry source
+                if (audio.readyState === 0 && !isJuz && surah) {
+                   audio.src = getAudioUrl(surah.id);
+                   audio.load();
+                }
+                playPromiseRef.current = audio.play();
+                setIsPlaying(true);
+                await playPromiseRef.current;
+            } catch (err) {
+                console.error("Playback was prevented:", err);
+                setIsPlaying(false);
+            } finally {
+                playPromiseRef.current = null;
+            }
         }
-        setIsPlaying(!isPlaying);
     }
   };
+
+  const selectedTafsirName = tafsirResources.find(r => r.id === settings.selectedTafsirId)?.name;
 
   if (loading) return (
     <div className="flex h-[80vh] items-center justify-center">
@@ -175,8 +262,8 @@ const Reader: React.FC = () => {
         </div>
       </div>
 
-      <div className="sticky top-[72px] z-40 mb-8 flex items-center justify-between rounded-2xl border border-emerald-50 bg-white/90 p-3 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/90">
-        <div className="flex gap-2">
+      <div className="sticky top-[72px] z-40 mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-50 bg-white/90 p-3 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/90">
+        <div className="flex flex-wrap items-center gap-2">
             <button 
                 onClick={() => setSettings(s => ({ ...s, showEnglish: !s.showEnglish }))}
                 className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${settings.showEnglish ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
@@ -189,15 +276,28 @@ const Reader: React.FC = () => {
             >
                 Urdu
             </button>
-            <button 
-                onClick={() => setSettings(s => ({ ...s, showTafsir: !s.showTafsir }))}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${settings.showTafsir ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-            >
-                {tafsirLoading && <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"></div>}
-                Tafsir
-            </button>
+            <div className="flex items-center gap-2">
+                <button 
+                    onClick={handleTafsirToggle}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${settings.showTafsir ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                >
+                    {tafsirLoading && <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"></div>}
+                    Tafsir
+                </button>
+                {settings.showTafsir && tafsirResources.length > 0 && (
+                    <select 
+                        value={settings.selectedTafsirId}
+                        onChange={handleTafsirResourceChange}
+                        className="rounded-lg border border-slate-200 bg-white py-1 px-2 text-xs font-medium focus:border-emerald-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                    >
+                        {tafsirResources.map(res => (
+                            <option key={res.id} value={res.id}>{res.name} ({res.language_name})</option>
+                        ))}
+                    </select>
+                )}
+            </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 ml-auto">
             <button 
                 onClick={() => setSettings(s => ({ ...s, fontSize: Math.max(s.fontSize - 0.1, 0.8) }))}
                 className="rounded-full p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
@@ -230,6 +330,7 @@ const Reader: React.FC = () => {
             onBookmark={toggleBookmark}
             isBookmarked={bookmarks.includes(verse.verse_key)}
             tafsir={tafsirs[verse.verse_key]}
+            tafsirName={selectedTafsirName}
           />
         ))}
       </div>

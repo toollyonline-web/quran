@@ -1,5 +1,5 @@
 
-import { Surah, Verse, Juz, Tafsir } from '../types';
+import { Surah, Verse, Juz, Tafsir, TafsirResource } from '../types';
 
 const BASE_URL = 'https://api.quran.com/api/v4';
 
@@ -57,6 +57,12 @@ export const fetchJuzVerses = async (
   }));
 };
 
+export const fetchTafsirResources = async (language: string = 'en'): Promise<TafsirResource[]> => {
+  const response = await fetch(`${BASE_URL}/resources/tafsirs?language=${language}`);
+  const data = await response.json();
+  return data.tafsirs;
+};
+
 export const fetchTafsirs = async (
   id: number,
   isJuz: boolean = false,
@@ -71,14 +77,17 @@ export const fetchTafsirs = async (
   
   // Create a map for quick lookup by verse_key
   const tafsirMap: Record<string, string> = {};
-  data.tafsirs.forEach((t: Tafsir) => {
-    tafsirMap[t.verse_key] = t.text;
-  });
+  if (data.tafsirs) {
+    data.tafsirs.forEach((t: Tafsir) => {
+      tafsirMap[t.verse_key] = t.text;
+    });
+  }
   
   return tafsirMap;
 };
 
 export const getAudioUrl = (surahId: number): string => {
   const paddedId = surahId.toString().padStart(3, '0');
-  return `https://download.quranicaudio.com/quran/mishary_rashid_alafasy/${paddedId}.mp3`;
+  // Switching to a more stable CDN (EveryAyah or Quran.com CDN)
+  return `https://everyayah.com/data/Alafasy_128kbps/${paddedId}.mp3`;
 };

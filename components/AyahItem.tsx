@@ -8,9 +8,10 @@ interface AyahItemProps {
   onBookmark: (key: string) => void;
   isBookmarked: boolean;
   tafsir?: string;
+  tafsirName?: string;
 }
 
-const AyahItem: React.FC<AyahItemProps> = ({ verse, settings, onBookmark, isBookmarked, tafsir }) => {
+const AyahItem: React.FC<AyahItemProps> = ({ verse, settings, onBookmark, isBookmarked, tafsir, tafsirName }) => {
   const englishTrans = verse.translations?.find(t => t.resource_id === 131)?.text;
   const urduTrans = verse.translations?.find(t => t.resource_id === 158)?.text;
 
@@ -68,7 +69,7 @@ const AyahItem: React.FC<AyahItemProps> = ({ verse, settings, onBookmark, isBook
 
       {settings.showTafsir && tafsir && (
         <div className="mt-6 rounded-2xl bg-stone-100 p-6 dark:bg-slate-800/50">
-          <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-emerald-700 dark:text-emerald-400">Tafsir Ibn Kathir</h4>
+          <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-emerald-700 dark:text-emerald-400">Tafsir: {tafsirName || "Ibn Kathir"}</h4>
           <div 
             className="font-serif text-sm leading-relaxed text-slate-700 dark:text-slate-300 [&_a]:text-emerald-600 [&_a]:underline" 
             dangerouslySetInnerHTML={{ __html: tafsir }} 
