@@ -15,6 +15,14 @@ export interface Surah {
   };
 }
 
+export interface ChapterInfo {
+  chapter_id: number;
+  language_name: string;
+  short_text: string;
+  source: string;
+  text: string;
+}
+
 export interface Juz {
   id: number;
   juz_number: number;

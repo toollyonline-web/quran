@@ -1,5 +1,5 @@
 
-import { Surah, Verse, Juz, Tafsir, TafsirResource, SearchResult } from '../types';
+import { Surah, Verse, Juz, Tafsir, TafsirResource, SearchResult, ChapterInfo } from '../types';
 
 const BASE_URL = 'https://api.quran.com/api/v4';
 
@@ -21,11 +21,16 @@ export const fetchSurahDetails = async (id: number): Promise<Surah> => {
   return data.chapter;
 };
 
+export const fetchChapterInfo = async (id: number): Promise<ChapterInfo> => {
+  const response = await fetch(`${BASE_URL}/chapters/${id}/info`);
+  const data = await response.json();
+  return data.chapter_info;
+};
+
 export const fetchSurahVerses = async (
   surahId: number, 
   translations: string = '131,158'
 ): Promise<Verse[]> => {
-  // Explicitly requesting text_uthmani and page_number fields
   const response = await fetch(`${BASE_URL}/verses/by_chapter/${surahId}?translations=${translations}&words=true&fields=text_uthmani,page_number&per_page=286`);
   const data = await response.json();
   return data.verses;
@@ -35,7 +40,6 @@ export const fetchJuzVerses = async (
   juzId: number,
   translations: string = '131,158'
 ): Promise<Verse[]> => {
-  // Explicitly requesting text_uthmani and page_number fields
   const response = await fetch(`${BASE_URL}/verses/by_juz/${juzId}?translations=${translations}&words=true&fields=text_uthmani,page_number&per_page=500`);
   const data = await response.json();
   return data.verses;
@@ -86,7 +90,6 @@ export const fetchAudioUrl = async (chapterId: number, reciterId: number): Promi
   return data.audio_file.audio_url;
 };
 
-// Fallback logic for reciters if the API endpoint is unavailable
 export const getReciterName = (id: number): string => {
   switch (id) {
     case 7: return 'Mishary Rashid Alafasy';

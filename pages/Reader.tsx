@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
-import { Verse, Surah, Settings, TafsirResource } from '../types';
-import { fetchSurahVerses, fetchJuzVerses, fetchSurahDetails, fetchAudioUrl, fetchTafsirs, fetchTafsirResources } from '../services/quranApi';
+import { Verse, Surah, Settings, TafsirResource, ChapterInfo } from '../types';
+import { fetchSurahVerses, fetchJuzVerses, fetchSurahDetails, fetchAudioUrl, fetchTafsirs, fetchTafsirResources, fetchChapterInfo } from '../services/quranApi';
 import AyahItem from '../components/AyahItem';
 
 const Reader: React.FC = () => {
@@ -12,6 +12,8 @@ const Reader: React.FC = () => {
   
   const [verses, setVerses] = useState<Verse[]>([]);
   const [surah, setSurah] = useState<Surah | null>(null);
+  const [chapterInfo, setChapterInfo] = useState<ChapterInfo | null>(null);
+  const [showInfoModal, setShowInfoModal] = useState(false);
   const [tafsirs, setTafsirs] = useState<Record<string, string>>({});
   const [tafsirResources, setTafsirResources] = useState<TafsirResource[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,18 +90,9 @@ const Reader: React.FC = () => {
     }
   };
 
-  const handleTafsirResourceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newId = parseInt(e.target.value);
-    setSettings(prev => ({ ...prev, selectedTafsirId: newId }));
-    if (settings.showTafsir) {
-      loadTafsirContent(newId);
-    }
-  };
-
   const handleReciterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newReciterId = parseInt(e.target.value);
     setSettings(prev => ({ ...prev, reciterId: newReciterId }));
-    // If audio is already loaded or playing, we should reset it
     if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
@@ -110,6 +103,7 @@ const Reader: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     setTafsirs({});
+    setChapterInfo(null);
     
     if (audioRef.current) {
       audioRef.current.pause();
@@ -128,12 +122,14 @@ const Reader: React.FC = () => {
           setVerses(data);
           setSurah(null);
         } else {
-          const [vData, sData] = await Promise.all([
+          const [vData, sData, infoData] = await Promise.all([
             fetchSurahVerses(idNum),
-            fetchSurahDetails(idNum)
+            fetchSurahDetails(idNum),
+            fetchChapterInfo(idNum)
           ]);
           setVerses(vData);
           setSurah(sData);
+          setChapterInfo(infoData);
           localStorage.setItem('quran_last_read', JSON.stringify({
             type: 'surah',
             id: idNum,
@@ -223,8 +219,17 @@ const Reader: React.FC = () => {
   return (
     <div className="mx-auto max-w-4xl py-12">
       <div className="mb-12 rounded-3xl bg-white p-8 text-center shadow-sm dark:bg-slate-900">
-        <div className="text-emerald-600 dark:text-emerald-400">
-          {isJuz ? `Sipara ${id}` : `Surah ${surah?.id}`}
+        <div className="flex items-center justify-center gap-2 text-emerald-600 dark:text-emerald-400">
+          <span>{isJuz ? `Sipara ${id}` : `Surah ${surah?.id}`}</span>
+          {!isJuz && chapterInfo && (
+            <button 
+              onClick={() => setShowInfoModal(true)}
+              className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400"
+              title="Surah Information"
+            >
+              i
+            </button>
+          )}
         </div>
         <h1 className="mt-2 text-4xl font-extrabold text-slate-900 dark:text-white">
           {isJuz ? `Juz ${id}` : surah?.name_simple}
@@ -333,6 +338,42 @@ const Reader: React.FC = () => {
           />
         ))}
       </div>
+
+      {showInfoModal && chapterInfo && (
+        <div 
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          onClick={() => setShowInfoModal(false)}
+        >
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+          
+          <div 
+            className="relative flex h-full max-h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 p-6 dark:border-slate-800">
+              <h2 className="text-xl font-bold text-slate-800 dark:text-white">Surah Information</h2>
+              <button 
+                onClick={() => setShowInfoModal(false)}
+                className="rounded-full p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l18 18" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-8">
+              <div 
+                className="prose prose-emerald max-w-none dark:prose-invert prose-p:text-slate-600 prose-p:leading-relaxed dark:prose-p:text-slate-400"
+                dangerouslySetInnerHTML={{ __html: chapterInfo.text }}
+              />
+              <div className="mt-8 border-t border-slate-100 pt-6 text-xs text-slate-400 dark:border-slate-800">
+                Source: {chapterInfo.source}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
