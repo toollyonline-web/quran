@@ -10,6 +10,8 @@ import JuzList from './pages/JuzList';
 import Reader from './pages/Reader';
 import About from './pages/About';
 import Disclaimer from './pages/Disclaimer';
+import NamesOfAllah from './pages/NamesOfAllah';
+import ZakatCalculator from './pages/ZakatCalculator';
 
 const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -43,6 +45,8 @@ const App: React.FC = () => {
             <Route path="/juz/:id" element={<Reader />} />
             <Route path="/about" element={<About />} />
             <Route path="/disclaimer" element={<Disclaimer />} />
+            <Route path="/99-names" element={<NamesOfAllah />} />
+            <Route path="/zakat" element={<ZakatCalculator />} />
           </Routes>
         </main>
         <Footer />

@@ -18,7 +18,6 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkMode, toggleDarkMode }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location]);
@@ -27,6 +26,8 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkMode, toggleDarkMode }) => {
     { name: 'Home', path: '/' },
     { name: 'Surah', path: '/surahs' },
     { name: 'Sipara', path: '/juzs' },
+    { name: '99 Names', path: '/99-names' },
+    { name: 'Zakat', path: '/zakat' },
     { name: 'About', path: '/about' },
   ];
 
@@ -52,8 +53,7 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkMode, toggleDarkMode }) => {
           </Link>
         </div>
 
-        {/* Desktop Nav */}
-        <div className="hidden md:block">
+        <div className="hidden lg:block">
           <div className="flex items-center space-x-1">
             {navLinks.map((link) => (
               <Link
@@ -91,10 +91,9 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkMode, toggleDarkMode }) => {
             )}
           </button>
 
-          {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-md md:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-md lg:hidden"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               {isMobileMenuOpen ? (
@@ -107,9 +106,8 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkMode, toggleDarkMode }) => {
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
-        <div className="absolute left-0 right-0 top-16 z-50 animate-in fade-in slide-in-from-top-2 md:hidden">
+        <div className="absolute left-0 right-0 top-16 z-50 animate-in fade-in slide-in-from-top-2 lg:hidden">
           <div className="mx-4 mt-2 rounded-3xl bg-white p-4 shadow-2xl ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
             <div className="flex flex-col gap-1">
               {navLinks.map((link) => (

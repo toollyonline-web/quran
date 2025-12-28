@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchPrayerTimes, PrayerData, getNextPrayer } from '../services/prayerTimes';
+import { NAMES_OF_ALLAH } from '../services/extraContent';
 
 interface Dua {
   arabic: string;
@@ -116,6 +117,12 @@ const Home: React.FC = () => {
     return DUAS[dayOfYear % DUAS.length];
   }, []);
 
+  const nameOfTheDay = useMemo(() => {
+    const now = new Date();
+    const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
+    return NAMES_OF_ALLAH[dayOfYear % NAMES_OF_ALLAH.length];
+  }, []);
+
   const popularSurahs = [
     { id: 1, name: 'Al-Fatihah', arabic: 'الفاتحة' },
     { id: 18, name: 'Al-Kahf', arabic: 'الكهف' },
@@ -163,7 +170,6 @@ const Home: React.FC = () => {
       <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex flex-col md:flex-row">
-            {/* Today Summary */}
             <div className="bg-emerald-600 p-8 text-white md:w-1/3">
               <div className="flex items-center gap-2 mb-2">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -191,7 +197,6 @@ const Home: React.FC = () => {
               )}
             </div>
 
-            {/* Timings List */}
             <div className="flex-1 p-8">
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
                 {prayerData ? (
@@ -221,11 +226,10 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Daily Dua Section */}
-      <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
+      {/* Two Column Section: Dua and Name of Allah */}
+      <section className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        {/* Daily Dua */}
         <div className="relative overflow-hidden rounded-3xl border border-stone-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="absolute top-0 right-0 h-32 w-32 translate-x-12 -translate-y-12 rounded-full bg-emerald-500/5 blur-2xl"></div>
-          
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-2">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
@@ -235,17 +239,12 @@ const Home: React.FC = () => {
               </span>
               <h2 className="text-sm font-bold uppercase tracking-widest text-emerald-700 dark:text-emerald-500">Daily Supplication</h2>
             </div>
-            <button 
-              onClick={handleShareDua}
-              className="text-slate-400 hover:text-emerald-600 transition-colors"
-              title="Share Dua"
-            >
+            <button onClick={handleShareDua} className="text-slate-400 hover:text-emerald-600 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
               </svg>
             </button>
           </div>
-
           <div className="text-center">
             <p dir="rtl" className="font-arabic text-3xl leading-relaxed text-slate-900 dark:text-white mb-6">
               {dailyDua.arabic}
@@ -253,16 +252,30 @@ const Home: React.FC = () => {
             <p className="text-lg italic text-slate-600 dark:text-slate-300 mb-4 px-4">
               "{dailyDua.translation}"
             </p>
-            <div className="flex items-center justify-center gap-2">
-              <Link 
-                to={`/surah/${dailyDua.surahId}`}
-                className="text-xs font-bold text-emerald-600 hover:underline"
-              >
-                {dailyDua.reference}
-              </Link>
-            </div>
+            <Link to={`/surah/${dailyDua.surahId}`} className="text-xs font-bold text-emerald-600 hover:underline">
+              {dailyDua.reference}
+            </Link>
           </div>
         </div>
+
+        {/* Name of the Day */}
+        <Link to="/99-names" className="group relative overflow-hidden rounded-3xl border border-stone-200 bg-white p-8 shadow-sm transition-all hover:border-amber-400/50 dark:border-slate-800 dark:bg-slate-900">
+           <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-amber-500/5 blur-2xl group-hover:bg-amber-500/10 transition-colors"></div>
+           <div className="flex items-center gap-2 mb-8">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                ✨
+              </span>
+              <h2 className="text-sm font-bold uppercase tracking-widest text-amber-700 dark:text-amber-500">Name of the Day</h2>
+            </div>
+            <div className="text-center">
+              <p dir="rtl" className="font-arabic text-5xl leading-relaxed text-emerald-700 dark:text-emerald-400 mb-4 transition-transform group-hover:scale-110">
+                {nameOfTheDay.name}
+              </p>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white">{nameOfTheDay.transliteration}</h3>
+              <p className="text-lg font-medium text-amber-600 mb-2">{nameOfTheDay.en.meaning}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">{nameOfTheDay.en.description}</p>
+            </div>
+        </Link>
       </section>
 
       {/* Continue Reading Section */}
@@ -320,35 +333,27 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Feature Section */}
-      <section className="grid grid-cols-1 gap-8 md:grid-cols-3">
-        {[
-          {
-            title: '114 Surahs',
-            desc: 'Complete index of all chapters from Al-Fatihah to An-Nas.',
-            icon: '📜',
-            link: '/surahs'
-          },
-          {
-            title: '30 Juz',
-            desc: 'The Quran divided into 30 equal parts for easy daily recitation.',
-            icon: '📖',
-            link: '/juzs'
-          },
-          {
-            title: 'Multilingual',
-            desc: 'Deepen your understanding with translations in English and Urdu.',
-            icon: '🌍',
-            link: '/surahs'
-          }
-        ].map((item, idx) => (
-          <div key={idx} className="rounded-2xl border border-slate-200 bg-white p-8 dark:border-slate-800 dark:bg-slate-900">
-            <div className="mb-4 text-4xl">{item.icon}</div>
-            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{item.title}</h3>
-            <p className="mt-2 text-slate-500 dark:text-slate-400">{item.desc}</p>
-            <Link to={item.link} className="mt-4 inline-block font-semibold text-emerald-600 hover:underline">View more &rarr;</Link>
-          </div>
-        ))}
+      {/* Spiritual Tools Section */}
+      <section>
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Spiritual Tools</h2>
+        </div>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <Link to="/zakat" className="flex items-center gap-6 rounded-3xl border border-slate-200 bg-white p-8 transition-all hover:border-emerald-400 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-3xl dark:bg-emerald-900/30">💰</div>
+            <div>
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white">Zakat Calculator</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Calculate your annual charity contributions easily.</p>
+            </div>
+          </Link>
+          <Link to="/99-names" className="flex items-center gap-6 rounded-3xl border border-slate-200 bg-white p-8 transition-all hover:border-emerald-400 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-3xl dark:bg-amber-900/30">✨</div>
+            <div>
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white">99 Names of Allah</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Explore the beautiful attributes of the Creator.</p>
+            </div>
+          </Link>
+        </div>
       </section>
     </div>
   );
