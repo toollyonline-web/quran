@@ -23,12 +23,24 @@ export interface Juz {
   };
 }
 
+export interface Word {
+  id: number;
+  position: number;
+  text_uthmani: string;
+  translation: {
+    text: string;
+    language_name: string;
+  };
+}
+
 export interface Verse {
   id: number;
   verse_number: number;
   verse_key: string;
   text_uthmani: string;
+  page_number: number;
   translations?: Translation[];
+  words?: Word[];
 }
 
 export interface Translation {
@@ -52,23 +64,18 @@ export interface TafsirResource {
   language_name: string;
 }
 
-export interface AudioFile {
-  id: number;
-  chapter_id: number;
-  file_size: number;
-  format: string;
-  audio_url: string;
-}
-
-export enum Language {
-  ENGLISH = 'en',
-  URDU = 'ur'
+export interface SearchResult {
+  verse_key: string;
+  text: string;
+  translations: Translation[];
 }
 
 export interface Settings {
   showEnglish: boolean;
   showUrdu: boolean;
   showTafsir: boolean;
+  showWordByWord: boolean;
+  reciterId: number;
   selectedTafsirId: number;
   isDarkMode: boolean;
   fontSize: number;

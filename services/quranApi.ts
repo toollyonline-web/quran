@@ -1,5 +1,5 @@
 
-import { Surah, Verse, Juz, Tafsir, TafsirResource } from '../types';
+import { Surah, Verse, Juz, Tafsir, TafsirResource, SearchResult } from '../types';
 
 const BASE_URL = 'https://api.quran.com/api/v4';
 
@@ -23,38 +23,20 @@ export const fetchSurahDetails = async (id: number): Promise<Surah> => {
 
 export const fetchSurahVerses = async (
   surahId: number, 
-  translations: string = '131,158' // 131: Muhsin Khan, 158: Bayan-ul-Quran (Urdu)
+  translations: string = '131,158'
 ): Promise<Verse[]> => {
-  const [arabicRes, transRes] = await Promise.all([
-    fetch(`${BASE_URL}/quran/verses/uthmani?chapter_number=${surahId}`),
-    fetch(`${BASE_URL}/verses/by_chapter/${surahId}?translations=${translations}&per_page=286`)
-  ]);
-
-  const arabicData = await arabicRes.json();
-  const transData = await transRes.json();
-
-  return arabicData.verses.map((v: any, index: number) => ({
-    ...v,
-    translations: transData.verses[index]?.translations || []
-  }));
+  const response = await fetch(`${BASE_URL}/verses/by_chapter/${surahId}?translations=${translations}&words=true&per_page=286`);
+  const data = await response.json();
+  return data.verses;
 };
 
 export const fetchJuzVerses = async (
   juzId: number,
   translations: string = '131,158'
 ): Promise<Verse[]> => {
-  const [arabicRes, transRes] = await Promise.all([
-    fetch(`${BASE_URL}/quran/verses/uthmani?juz_number=${juzId}`),
-    fetch(`${BASE_URL}/verses/by_juz/${juzId}?translations=${translations}&per_page=286`)
-  ]);
-
-  const arabicData = await arabicRes.json();
-  const transData = await transRes.json();
-
-  return arabicData.verses.map((v: any, index: number) => ({
-    ...v,
-    translations: transData.verses[index]?.translations || []
-  }));
+  const response = await fetch(`${BASE_URL}/verses/by_juz/${juzId}?translations=${translations}&words=true&per_page=500`);
+  const data = await response.json();
+  return data.verses;
 };
 
 export const fetchTafsirResources = async (language: string = 'en'): Promise<TafsirResource[]> => {
@@ -66,7 +48,7 @@ export const fetchTafsirResources = async (language: string = 'en'): Promise<Taf
 export const fetchTafsirs = async (
   id: number,
   isJuz: boolean = false,
-  tafsirId: number = 169 // 169: Ibn Kathir (English)
+  tafsirId: number = 169
 ): Promise<Record<string, string>> => {
   const endpoint = isJuz 
     ? `${BASE_URL}/tafsirs/${tafsirId}/by_juz/${id}`
@@ -75,7 +57,6 @@ export const fetchTafsirs = async (
   const response = await fetch(endpoint);
   const data = await response.json();
   
-  // Create a map for quick lookup by verse_key
   const tafsirMap: Record<string, string> = {};
   if (data.tafsirs) {
     data.tafsirs.forEach((t: Tafsir) => {
@@ -86,8 +67,29 @@ export const fetchTafsirs = async (
   return tafsirMap;
 };
 
-export const getAudioUrl = (surahId: number): string => {
-  const paddedId = surahId.toString().padStart(3, '0');
-  // Switching to a more stable CDN (EveryAyah or Quran.com CDN)
-  return `https://everyayah.com/data/Alafasy_128kbps/${paddedId}.mp3`;
+export const searchQuran = async (query: string): Promise<SearchResult[]> => {
+  if (query.length < 3) return [];
+  const response = await fetch(`${BASE_URL}/search?q=${encodeURIComponent(query)}&language=en&size=20`);
+  const data = await response.json();
+  return data.search.results.map((r: any) => ({
+    verse_key: r.verse_key,
+    text: r.text,
+    translations: r.translations || []
+  }));
+};
+
+export const fetchAudioUrl = async (chapterId: number, reciterId: number): Promise<string> => {
+  const response = await fetch(`${BASE_URL}/chapter_recitations/${reciterId}/${chapterId}`);
+  const data = await response.json();
+  return data.audio_file.audio_url;
+};
+
+// Fallback logic for reciters if the API endpoint is unavailable
+export const getReciterName = (id: number): string => {
+  switch (id) {
+    case 7: return 'Mishary Rashid Alafasy';
+    case 6: return 'Khalil Al-Husary';
+    case 1: return 'AbdulBaset AbdulSamad';
+    default: return 'Reciter';
+  }
 };

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { Verse, Surah, Settings, TafsirResource } from '../types';
-import { fetchSurahVerses, fetchJuzVerses, fetchSurahDetails, getAudioUrl, fetchTafsirs, fetchTafsirResources } from '../services/quranApi';
+import { fetchSurahVerses, fetchJuzVerses, fetchSurahDetails, fetchAudioUrl, fetchTafsirs, fetchTafsirResources } from '../services/quranApi';
 import AyahItem from '../components/AyahItem';
 
 const Reader: React.FC = () => {
@@ -17,6 +17,7 @@ const Reader: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [tafsirLoading, setTafsirLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -28,6 +29,8 @@ const Reader: React.FC = () => {
       showEnglish: true,
       showUrdu: true,
       showTafsir: false,
+      showWordByWord: false,
+      reciterId: 7, // Default: Mishary Rashid
       selectedTafsirId: 169, // Default: Ibn Kathir
       isDarkMode: false,
       fontSize: 1.125
@@ -43,7 +46,6 @@ const Reader: React.FC = () => {
     if (saved) setBookmarks(JSON.parse(saved));
   }, []);
 
-  // Audio Cleanup on unmount
   useEffect(() => {
     return () => {
       if (audioRef.current) {
@@ -81,7 +83,6 @@ const Reader: React.FC = () => {
   const handleTafsirToggle = () => {
     const nextShowTafsir = !settings.showTafsir;
     setSettings(prev => ({ ...prev, showTafsir: nextShowTafsir }));
-    
     if (nextShowTafsir && Object.keys(tafsirs).length === 0) {
       loadTafsirContent();
     }
@@ -95,11 +96,21 @@ const Reader: React.FC = () => {
     }
   };
 
+  const handleReciterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newReciterId = parseInt(e.target.value);
+    setSettings(prev => ({ ...prev, reciterId: newReciterId }));
+    // If audio is already loaded or playing, we should reset it
+    if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+        setIsPlaying(false);
+    }
+  };
+
   useEffect(() => {
     setLoading(true);
-    setTafsirs({}); // Reset tafsirs on page change
+    setTafsirs({});
     
-    // Reset audio when switching surahs
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
@@ -159,44 +170,40 @@ const Reader: React.FC = () => {
   const toggleAudio = async () => {
     if (!audioRef.current) {
         if (!isJuz && surah) {
-            const url = getAudioUrl(surah.id);
-            const audio = new Audio();
-            audio.preload = "auto";
-            audio.src = url;
-            audio.onended = () => setIsPlaying(false);
-            // Handle audio error safely by referencing the audio element directly
-            audio.onerror = (e) => {
-              const audioErr = audio.error;
-              console.error("Audio playback error:", audioErr?.message || "Source not supported or unreachable.", e);
-              setIsPlaying(false);
-              alert("Sorry, this audio recitation is currently unavailable from this server.");
-            };
-            audioRef.current = audio;
+            setIsAudioLoading(true);
+            try {
+                const url = await fetchAudioUrl(surah.id, settings.reciterId);
+                const audio = new Audio();
+                audio.preload = "auto";
+                audio.src = url;
+                audio.onended = () => setIsPlaying(false);
+                audio.onerror = () => {
+                  setIsPlaying(false);
+                  setIsAudioLoading(false);
+                  alert("Audio recitation unavailable.");
+                };
+                audio.oncanplay = () => setIsAudioLoading(false);
+                audioRef.current = audio;
+            } catch (e) {
+                console.error(e);
+                setIsAudioLoading(false);
+                return;
+            }
         }
     }
     
     const audio = audioRef.current;
     if (audio) {
         if (isPlaying) {
-            if (playPromiseRef.current !== null) {
-                try {
-                    await playPromiseRef.current;
-                } catch (e) { /* ignore interrupted play errors */ }
-            }
             audio.pause();
             setIsPlaying(false);
         } else {
             try {
-                // Ensure audio is ready or retry source
-                if (audio.readyState === 0 && !isJuz && surah) {
-                   audio.src = getAudioUrl(surah.id);
-                   audio.load();
-                }
                 playPromiseRef.current = audio.play();
                 setIsPlaying(true);
                 await playPromiseRef.current;
             } catch (err) {
-                console.error("Playback was prevented:", err);
+                console.error("Playback prevented:", err);
                 setIsPlaying(false);
             } finally {
                 playPromiseRef.current = null;
@@ -222,32 +229,26 @@ const Reader: React.FC = () => {
         <h1 className="mt-2 text-4xl font-extrabold text-slate-900 dark:text-white">
           {isJuz ? `Juz ${id}` : surah?.name_simple}
         </h1>
-        {!isJuz && surah && (
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-500">
-            <span>{surah.translated_name.name}</span>
-            <span className="h-1 w-1 rounded-full bg-slate-300"></span>
-            <span>{surah.verses_count} Verses</span>
-            <span className="h-1 w-1 rounded-full bg-slate-300"></span>
-            <span>{surah.revelation_place}</span>
-          </div>
-        )}
-
-        <div className="mt-8 flex items-center justify-center gap-4">
-          {!isJuz && (
+        
+        {!isJuz && (
+          <div className="mt-8 flex items-center justify-center gap-4">
             <button
               onClick={toggleAudio}
+              disabled={isAudioLoading}
               className={`flex items-center gap-2 rounded-full px-6 py-2 font-bold transition-all ${
                 isPlaying 
                   ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' 
                   : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-200 dark:shadow-none'
-              }`}
+              } disabled:opacity-50`}
             >
-              {isPlaying ? (
+              {isAudioLoading ? (
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+              ) : isPlaying ? (
                 <>
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
-                  Pause Recitation
+                  Pause
                 </>
               ) : (
                 <>
@@ -258,12 +259,18 @@ const Reader: React.FC = () => {
                 </>
               )}
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="sticky top-[72px] z-40 mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-50 bg-white/90 p-3 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/90">
         <div className="flex flex-wrap items-center gap-2">
+            <button 
+                onClick={() => setSettings(s => ({ ...s, showWordByWord: !s.showWordByWord }))}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${settings.showWordByWord ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+            >
+                Word-by-Word
+            </button>
             <button 
                 onClick={() => setSettings(s => ({ ...s, showEnglish: !s.showEnglish }))}
                 className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${settings.showEnglish ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
@@ -276,48 +283,40 @@ const Reader: React.FC = () => {
             >
                 Urdu
             </button>
-            <div className="flex items-center gap-2">
-                <button 
-                    onClick={handleTafsirToggle}
-                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${settings.showTafsir ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                >
-                    {tafsirLoading && <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"></div>}
-                    Tafsir
-                </button>
-                {settings.showTafsir && tafsirResources.length > 0 && (
-                    <select 
-                        value={settings.selectedTafsirId}
-                        onChange={handleTafsirResourceChange}
-                        className="rounded-lg border border-slate-200 bg-white py-1 px-2 text-xs font-medium focus:border-emerald-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
-                    >
-                        {tafsirResources.map(res => (
-                            <option key={res.id} value={res.id}>{res.name} ({res.language_name})</option>
-                        ))}
-                    </select>
-                )}
-            </div>
+            <button 
+                onClick={handleTafsirToggle}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${settings.showTafsir ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+            >
+                Tafsir
+            </button>
         </div>
-        <div className="flex items-center gap-3 ml-auto">
-            <button 
-                onClick={() => setSettings(s => ({ ...s, fontSize: Math.max(s.fontSize - 0.1, 0.8) }))}
-                className="rounded-full p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                title="Decrease font size"
+        
+        <div className="flex flex-wrap items-center gap-3">
+            <select 
+                value={settings.reciterId}
+                onChange={handleReciterChange}
+                className="rounded-lg border border-slate-200 bg-white py-1.5 px-3 text-xs font-medium focus:border-emerald-500 dark:border-slate-800 dark:bg-slate-900"
             >
-                A-
-            </button>
-            <button 
-                onClick={() => setSettings(s => ({ ...s, fontSize: Math.min(s.fontSize + 0.1, 2) }))}
-                className="rounded-full p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                title="Increase font size"
-            >
-                A+
-            </button>
+                <option value={7}>Mishary Rashid</option>
+                <option value={6}>Khalil Al-Husary</option>
+                <option value={1}>AbdulBaset (Murattal)</option>
+            </select>
+            <div className="flex items-center gap-1">
+                <button 
+                    onClick={() => setSettings(s => ({ ...s, fontSize: Math.max(s.fontSize - 0.1, 0.8) }))}
+                    className="h-8 w-8 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >A-</button>
+                <button 
+                    onClick={() => setSettings(s => ({ ...s, fontSize: Math.min(s.fontSize + 0.1, 2) }))}
+                    className="h-8 w-8 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >A+</button>
+            </div>
         </div>
       </div>
 
       <div className="space-y-4">
         {surah?.bismillah_pre && (
-            <div dir="rtl" className="font-arabic mb-12 py-8 text-center text-3xl text-emerald-800 dark:text-emerald-400">
+            <div dir="rtl" className="font-arabic mb-12 py-8 text-center text-4xl text-emerald-800 dark:text-emerald-400">
                 بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ
             </div>
         )}
